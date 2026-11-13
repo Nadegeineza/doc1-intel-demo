@@ -12,6 +12,7 @@ What changed from v3:
 
 Run:  python app.py     then open http://127.0.0.1:5000
 """
+import importlib.util
 import io
 import json
 import re
@@ -49,6 +50,8 @@ ENGINES = {
     "easyocr_cpu": "EasyOCR (CPU)",
 }
 _readers = {}
+if importlib.util.find_spec("easyocr") is None:  # e.g. on Render: only offer Tesseract
+    ENGINES = {"tesseract": ENGINES["tesseract"]}
 
 # ---------------------------------------------------------------------------
 # CHECKLIST: what must be present on the certificate
@@ -516,13 +519,15 @@ HOME = r"""{% extends "base.html" %}
           <span class="small">PDF, PNG, JPG or TIFF. Up to 20 MB and {{ max_pages }} pages.</span>
         </label>
         <div class="options">
+          {% if engines|length > 1 %}
           <label for="engine">Reading method</label>
           <select id="engine" name="engine">
             {% for key, label in engines.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
           </select>
+          {% else %}<input type="hidden" name="engine" value="tesseract">{% endif %}
           <button id="go" class="btn" type="submit" disabled>Analyze document</button>
         </div>
-        <p class="small options-note">Tesseract is fastest on a laptop CPU. EasyOCR is faster when a GPU is available.</p>
+        {% if engines|length > 1 %}<p class="small options-note">Tesseract is fastest on a laptop CPU. EasyOCR is faster when a GPU is available.</p>{% endif %}
       </form>
 
       <div id="panel" class="working" hidden>
